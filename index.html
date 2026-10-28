@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Market Prediction</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    color: #000;
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #222;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #111;
+}
+
+.result-panel {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ccc;
+}
+
+.guess {
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.up {
+    color: green;
+}
+
+.down {
+    color: red;
+}
+
+.neutral {
+    color: orange;
+}
+
+.score-row {
+    margin: 8px 0;
+    font-size: 18px;
+}
+
+.error {
+    color: red;
+    margin-top: 15px;
+}
+
+footer {
+    margin-top: 40px;
+    text-align: center;
+    color: #666;
+}
+
+.hidden {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Stock Market Prediction</h1>
+<p class="subtitle">Powered By Tom Labs AI</p>
+
+<form id="prediction-form">
+
+<label>
+    1 Day Return (%)
+    <input name="return_yesterday" type="number" step="any" value="2.845" required>
+</label>
+
+<label>
+    2 Day Return (%)
+    <input name="return_2_days_ago" type="number" step="any" value="-2.808" required>
+</label>
+
+<label>
+    3 Day Return (%)
+    <input name="return_3_days_ago" type="number" step="any" value="-1.877" required>
+</label>
+
+<label>
+    5 Day Return (%)
+    <input name="return_5_days_ago" type="number" step="any" value="-3.581" required>
+</label>
+
+<label>
+    10 Day Return (%)
+    <input name="return_10_days_ago" type="number" step="any" value="-3.652" required>
+</label>
+
+<label>
+    Avg Return (%)
+    <input name="average_5_day_return" type="number" step="any" value="-0.730" required>
+</label>
+
+<label>
+    Volatility (%)
+    <input name="volatility_10_days" type="number" step="any" value="3.154" required>
+</label>
+
+<label>
+    Volume Ratio
+    <input name="relative_volume" type="number" step="any" value="1.252" required>
+</label>
+
+<button type="submit">
+    Get Prediction
+</button>
+
+<p id="error-message" class="error hidden"></p>
+
+</form>
+
+<div class="result-panel">
+
+    <div id="result-placeholder">
+        Waiting for prediction...
+    </div>
+
+    <div id="result-content" class="hidden">
+
+        <div id="guess" class="guess"></div>
+
+        <div id="scores"></div>
+
+    </div>
+
+</div>
+
+<footer>
+    Powered By Tom Labs AI<br>
+    Made By Tom
+</footer>
+
+<script>
+
+const form = document.getElementById("prediction-form");
+const button = form.querySelector("button");
+
+const errorMessage = document.getElementById("error-message");
+
+const resultPlaceholder = document.getElementById("result-placeholder");
+const resultContent = document.getElementById("result-content");
+
+const guess = document.getElementById("guess");
+const scores = document.getElementById("scores");
+
+const featureNames = [
+    "return_yesterday",
+    "return_2_days_ago",
+    "return_3_days_ago",
+    "return_5_days_ago",
+    "return_10_days_ago",
+    "average_5_day_return",
+    "volatility_10_days",
+    "relative_volume"
+];
+
+form.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    errorMessage.classList.add("hidden");
+
+    button.disabled = true;
+    button.textContent = "Loading...";
+
+    const formData = new FormData(form);
+
+    const features = featureNames.map((name, index) => {
+
+        const value = Number(formData.get(name));
+
+        return index === 7
+            ? value
+            : value / 100;
+
+    });
+
+    try {
+
+        const response = await fetch("/api/predict", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                features
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || "Prediction failed.");
+        }
+
+        guess.textContent = result.prediction;
+
+        guess.className =
+            "guess " +
+            result.prediction.toLowerCase();
+
+        scores.innerHTML = "";
+
+        for (const [name, value] of Object.entries(result.scores)) {
+
+            const row = document.createElement("div");
+
+            row.className = "score-row";
+
+            row.textContent =
+                `${name}: ${(value * 100).toFixed(1)}%`;
+
+            scores.appendChild(row);
+        }
+
+        resultPlaceholder.classList.add("hidden");
+        resultContent.classList.remove("hidden");
+
+    } catch (error) {
+
+        errorMessage.textContent = error.message;
+        errorMessage.classList.remove("hidden");
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "Get Prediction";
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>

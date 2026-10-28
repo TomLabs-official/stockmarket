@@ -1,0 +1,12 @@
+{
+  "name": "stockmarket-neural-network-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Node.js website backed by the stock-market neural network.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
